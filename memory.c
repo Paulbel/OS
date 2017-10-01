@@ -15,7 +15,6 @@ struct block *get_block_by_va(VA ptr, int size);
 struct pageDescription {
     struct page *page;
     struct pageInfo pageInfo;
-    int offset;
 };
 
 
@@ -133,11 +132,11 @@ struct memory *memory;
 
 int getFreeMemoryIndex() {
     for (int adress = 0; adress < memory->pageNumber; adress++) {
-        if (memory->isUsed[adress] == 1) {
+        if (memory->isUsed[adress] == 0) {
             return adress;//adress of the first free page in physical memory
         }
     }
-    return 0;//if there are no free pages in physical memory
+    return -1;//if there are no free pages in physical memory
 }
 
 int pageIsFreeByAdress(int adress) {
@@ -157,21 +156,24 @@ int _init(int n, int szPage) {
     memory->pages = calloc(n, sizeof(struct page));
     memory->pageNumber = n;
     memory->pageSize = szPage;
-    memory->freeMemorySize = n*szPage;
+    memory->freeMemorySize = n * szPage;
     for (int pageIndex = 0; pageIndex < memory->pageNumber; ++pageIndex) {
         struct page page;
+
         page.pFirstFree = malloc(sizeof(struct block));
-        page.pFirstUse = malloc(sizeof(struct block));
         page.pFirstFree->pNext = NULL;
         page.pFirstFree->szBlock = szPage;
+
+
+        page.pFirstUse = malloc(sizeof(struct block));
         page.pFirstUse->szBlock = 0;
+        page.pFirstUse->pNext = NULL;
+
         page.maxSizeFreeBlock = szPage;
         memory->pages[pageIndex] = page;
+        memory->isUsed = 0;
     }
     memory->isUsed = calloc(n, sizeof(int));
-    for (int index = 0; index < n; index++) {
-        memory->isUsed[index] = 0;
-    }
 
 
     VA *p;
@@ -180,6 +182,7 @@ int _init(int n, int szPage) {
 
 
 int _malloc(VA *ptr, size_t szBlock) {
+
     if (szBlock <= 0 || !ptr)
         return -1;
     if (szBlock > memory->freeMemorySize)
@@ -197,28 +200,21 @@ int _malloc(VA *ptr, size_t szBlock) {
     //struct pageDescription *pageDescription = calloc(pageNumber, sizeof(struct pageDescription));
 
 
-    struct pageDescription **pageTable =calloc(pageNumber, sizeof(struct pageDescription));
+    struct pageDescription **pageTable = calloc(pageNumber, sizeof(struct pageDescription));
 
-////
     for (int number = 0; number < pageNumber; number++) {
         int freePageNumber = getFreeMemoryIndex();
-        struct pageDescription *pageDescription = malloc(sizeof(struct pageDescription));
 
-        pageTable[number] = pageDescription;
-
-
-        pageDescription = malloc(sizeof(struct pageDescription));
-
-        pageDescription->page = &(memory->pages[freePageNumber]);
-
+        pageTable[number] = (struct pageDescription *)malloc(sizeof(struct pageDescription));
+        pageTable[number] = malloc(sizeof(struct pageDescription));
+        pageTable[number]->page = &memory->pages[freePageNumber];
         memory->isUsed[freePageNumber] = 1;
-
         //pageDescription[number] = malloc(sizeof(struct pageDescription));
     }
 
-
     for (int pageIndex = 0; pageIndex < pageNumber; ++pageIndex) {
         struct page *page = pageTable[pageIndex]->page;
+
 
 
         if (page->pFirstUse->szBlock != 0) {
