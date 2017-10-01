@@ -211,23 +211,21 @@ int _malloc(VA *ptr, size_t szBlock) {
         memory->isUsed[freePageNumber] = 1;
         //pageDescription[number] = malloc(sizeof(struct pageDescription));
     }
-
+    struct block * prevBlock = NULL;
     for (int pageIndex = 0; pageIndex < pageNumber; ++pageIndex) {
         struct page *page = pageTable[pageIndex]->page;
-
-
-
-        if (page->pFirstUse->szBlock != 0) {
-            page->pFirstUse->szBlock = 0;
-            page->pFirstFree->szBlock = memory->pageSize;
-        }
-
         if (sizeLeft >= memory->pageSize) {
+            page->pFirstUse->szBlock = memory->pageSize;
+            page->pFirstFree->szBlock = 0;
             sizeLeft -= memory->pageSize;
         } else {
             page->pFirstUse->szBlock = sizeLeft;
             page->pFirstFree->szBlock = memory->pageSize - sizeLeft;
         }
+        if(prevBlock!=NULL){
+            prevBlock->pNext = page->pFirstUse;
+        }
+        prevBlock = page->pFirstUse;
     }
 
     // while (sizeLeft >= 0) {
