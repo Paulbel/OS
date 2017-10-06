@@ -3,5 +3,5 @@ project(OS)
 
 set(CMAKE_C_STANDARD 99)
 
-set(SOURCE_FILES memory.c test.c)
+set(SOURCE_FILES memory.c test.c mmemory.h)
 add_executable(OS ${SOURCE_FILES})
